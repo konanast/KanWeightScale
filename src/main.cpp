@@ -3,7 +3,7 @@ Weight scale by Konstantinos Anastasakis https://kostislab.blogspot.gr/
 
  Setup your scale and start WITHOUT a weight on the scale
  Once readings are displayed place a known weight on the scale
- Αdjust the calibration_factor with the potentiometer until the output readings match the known weight
+ Αdjust the calibration_factor with the potentiometer in inverse proportion of the measurements until the output readings match the known weight
 
 HX711 conection
  *The HX711 board can be powered from 2.7V to 5V so the Arduino 5V power should be fine.
@@ -62,7 +62,7 @@ GND, A2, VCC
 Calibration, Zero and Memory Button conection
 D10,  D11,  D12 *All to GND, it will be LOW when pressed.
 
-Soft power with
+Soft power with ..
 Not completed yet needs more work...
 power output pin D? *keeps the board alive
 read power state pin D?
@@ -85,11 +85,16 @@ LiquidCrystal_I2C lcd(0x27, 2, 1, 0, 4, 5, 6, 7, 3, POSITIVE);  // For i2c adapt
 HX711 scale(DOUT, CLK);
 
 int potPin = 2;    // select the input pin for the potentiometer
-// int potval = 0;       // variable to store the value coming from the sensor
 
-float calibration_factor = 0; // in inverse proportion of the measurements
+float calibration_factor = 0;
 float units;
 float ounces;
+
+int new_weight = 0; //
+int old_weight = 0; //
+int delta;  //
+int maxnum = 10;     //
+int count = 0;       //
 
 const int calibButton = 10;
 const int zeroButton = 11;
@@ -191,31 +196,31 @@ void memory_code() {
 // End function
 
 void setup() {
-  Serial.begin(9600);
-/*
-pinMode(0, INPUT_PULLUP);
-pinMode(1, INPUT_PULLUP);
-pinMode(2, INPUT_PULLUP);
-pinMode(3, INPUT_PULLUP);
-pinMode(4, INPUT_PULLUP);
-pinMode(5, INPUT_PULLUP);
-pinMode(6, OUTPUT);
-pinMode(7, INPUT_PULLUP);
-pinMode(8, INPUT_PULLUP);
-pinMode(9, INPUT_PULLUP);
-pinMode(10, INPUT_PULLUP);
-pinMode(11, INPUT_PULLUP);
-pinMode(12, INPUT_PULLUP);
-pinMode(13, INPUT_PULLUP);
-pinMode(14, INPUT_PULLUP);
-pinMode(15, INPUT_PULLUP);
-pinMode(16, INPUT_PULLUP);
-pinMode(17, INPUT_PULLUP);
-pinMode(18, INPUT_PULLUP);
-pinMode(19, INPUT_PULLUP);
-pinMode(20, INPUT_PULLUP);
-pinMode(21, INPUT_PULLUP);
-*/
+  // Serial.begin(9600);
+
+  pinMode(0, INPUT_PULLUP);
+  pinMode(1, INPUT_PULLUP);
+  pinMode(2, INPUT_PULLUP);
+  pinMode(3, INPUT_PULLUP);
+  pinMode(4, INPUT_PULLUP);
+  pinMode(5, INPUT_PULLUP);
+  // pinMode(6, OUTPUT);
+  // pinMode(7, INPUT_PULLUP);
+  pinMode(8, INPUT_PULLUP);
+  pinMode(9, INPUT_PULLUP);
+  // pinMode(10, INPUT_PULLUP);
+  // pinMode(11, INPUT_PULLUP);
+  // pinMode(12, INPUT_PULLUP);
+  // pinMode(13, INPUT_PULLUP); //this powers the led that is connected on pin13
+  pinMode(14, INPUT_PULLUP); //A0 *Analog pins
+  pinMode(15, INPUT_PULLUP); //A1
+  // pinMode(16, INPUT_PULLUP); //A2
+  pinMode(17, INPUT_PULLUP); //A3
+  pinMode(18, INPUT_PULLUP); //A4
+  pinMode(19, INPUT_PULLUP); //A5
+  pinMode(20, INPUT_PULLUP); //A6
+  pinMode(21, INPUT_PULLUP); //A7
+
   pinMode(calibButton, INPUT_PULLUP);
   pinMode(zeroButton, INPUT_PULLUP);
   pinMode(memoryButton, INPUT_PULLUP);
@@ -224,36 +229,28 @@ pinMode(21, INPUT_PULLUP);
 
   // set up the LCD's number of columns and rows:
   lcd.begin(16, 2);
-//  lcd.setCursor(0, 0);
-//  lcd.print("HX711 calibration");
-  Serial.println("HX711 calibration sketch");
-  Serial.println("Remove all weight from scale");
-  Serial.println("After readings begin, place known weight on scale");
-  Serial.println("Press + or a to increase calibration factor");
-  Serial.println("Press - or z to decrease calibration factor");
+
   delay(100);
   scale.set_scale();
   delay(100);
   scale.tare();  //Reset the scale to 0
+  lcd.clear();  //Clear the lcd
 
-  long zero_factor = scale.read_average(); //Get a baseline reading
-  Serial.print("Zero factor: "); //This can be used to remove the need to tare the scale. Useful in permanent scale projects.
-  Serial.println(zero_factor);
-  lcd.clear();
+// // Serial print for debaging
+//   Serial.println("HX711 calibration sketch");
+//   Serial.println("Remove all weight from scale");
+//   Serial.println("After readings begin, place known weight on scale");
+//   Serial.println("Turn the potentiometer in inverse proportion of the measurements");
 }
 
 void loop() {
+  new_weight = scale.read_average();
+  delta = new_weight - old_weight;
+
   time = millis(); //Returns the number of milliseconds since the Arduino board began running the current program.
     // This number will overflow (go back to zero), after approximately 50 days.
   calibration_factor = analogRead(potPin); // read the value from the potentiometer
   scale.set_scale(calibration_factor); //Adjust to this calibration factor
-  Serial.print("calibration_factor: ");
-  Serial.println(calibration_factor);
-  Serial.print("Reading: ");
-  delay(100);
-  Serial.print(scale.get_units(5), 1);
-  Serial.println(" grams");
-
   lcd.setCursor(0, 0);
   lcd.print("Grams: ");
   lcd.print(scale.get_units(5), 1);
@@ -263,16 +260,49 @@ void loop() {
   lcd.print(" ");
   lcd.print(" ");
   lcd.print(" ");
+  lcd.setCursor(0, 1);
+  lcd.print(" ");
+  lcd.print(" ");
+  lcd.print(" ");
 
   if (digitalRead(calibButton) == LOW) {calibration_code();}
   if (digitalRead(zeroButton) == LOW) {zero_code();}
   if (digitalRead(memoryButton) == LOW) {memory_code();}
 
-  // if (time > 5000) {
-  //   scale.power_down(); // put the ADC in sleep mode
-  //   lcd.noDisplay();
-  //   lcd.noBacklight(); // turn off backlight
-  //   LowPower.powerDown(SLEEP_1S, ADC_OFF, BOD_OFF); // put the board to sleep
-  //   // scale.power_up();
-  // }
+  if (delta < 1000) {
+    count++;
+  } else {
+    count = 0;
+  }
+
+  if (count > maxnum) {
+    scale.power_down(); // put the ADC in sleep mode
+    lcd.noDisplay();
+    lcd.noBacklight(); // turn off backlight
+    LowPower.powerDown(SLEEP_1S, ADC_OFF, BOD_OFF); // put the board to sleep
+    // scale.power_up();
+  }
+
+// // Serial print for debaging
+//   Serial.print("calibration_factor: ");
+//   Serial.println(calibration_factor);
+//   Serial.print("Reading: ");
+//   delay(100);
+//   Serial.print(scale.get_units(5), 1);
+//   Serial.println(" grams");
+//   long zero_factor = scale.read_average(); //Get a baseline reading
+//   Serial.print("Zero factor: "); //This can be used to remove the need to
+//    //tare the scale. Useful in permanent scale projects.
+//   Serial.println(zero_factor);
+//   Serial.print("delta");
+//   Serial.println(delta);
+//   Serial.print("new_weight");
+//   Serial.println(new_weight);
+//   Serial.print("old_weight");
+//   Serial.println(old_weight);
+//   Serial.print("count");
+//   Serial.println(count);
+// //
+
+  old_weight = new_weight; // Update the old readings
 }
