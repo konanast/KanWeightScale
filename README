@@ -1,0 +1,69 @@
+/*
+Weight scale by Konstantinos Anastasakis https://kostislab.blogspot.gr/
+
+ Setup your scale and start WITHOUT a weight on the scale
+ Once readings are displayed place a known weight on the scale
+ Αdjust the calibration_factor with the potentiometer until the output readings match the known weight
+
+HX711 conection
+ *The HX711 board can be powered from 2.7V to 5V so the Arduino 5V power should be fine.
+ Arduino pin D6 -> HX711 CLK
+ Arduino pin D5 -> HX711 DOUT
+ Arduino pin 5V -> HX711 VCC
+ Arduino pin GND -> HX711 GND
+
+Sensor conection
+ Excitation+ (E+) or VCC is red
+ Excitation- (E-) or ground is black.
+ Output+ (O+), Signal+ (S+)+ or Amplifier+ (A+) is white
+ O-, S-, or A- is green or blue
+ more info hire: https://learn.sparkfun.com/tutorials/load-cell-amplifier-hx711-breakout-hookup-guide
+
+ LCD display conection
+  I2C Address
+  -----( Declare Constants )-----
+  -----( Declare objects )-----
+  https://arduino-info.wikispaces.com/LCD-Blue-I2C
+  set the LCD address to 0x27 for a 16 chars 2 line display. A FEW use address 0x3F.
+  ​Some of I2C LCD interfaces have pins (or solder pads) that can be changed to change the address.
+  They are usually labelled as A0-A1-A2 . Here's how the address change from a default 0x27 or 0x3F,
+  if you connect the address pads together. (1 = Not Connected. 0 = Connected):
+  A0	A1	A2	HEX Address
+  1	1	1	0x27
+  0	1	1	0x26
+  1	0	1	0x25
+  0	0	1	0x24
+  1	1	0	0x23
+  0	1	0	0x22
+  1	0	0	0x21
+  0	0	0	0x20
+
+ If no i2c adapter the connections will be:
+  * LCD RS pin to digital pin 12
+  * LCD Enable pin to digital pin 11
+  * LCD D4 pin to digital pin 5
+  * LCD D5 pin to digital pin 4
+  * LCD D6 pin to digital pin 3
+  * LCD D7 pin to digital pin 2
+  * LCD R/W pin to ground
+  * LCD VSS pin to ground
+  * LCD VCC pin to 5V
+  * 10K resistor:
+  * ends to +5V and ground
+  * wiper to LCD VO pin (pin 3)
+
+Timer with DS3231 module
+ Future plans is to put a timer with a beeper, so I don't burn the food...
+ maybe a bluetooth and esp also... :)
+
+Potentiometer conection
+GND, A2, VCC
+
+Calibration, Zero and Memory Button conection
+D10,  D11,  D12 *All to GND, it will be LOW when pressed.
+
+Soft power with
+Not completed yet needs more work...
+power output pin D? *keeps the board alive
+read power state pin D?
+*/
