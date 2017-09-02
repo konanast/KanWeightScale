@@ -2,12 +2,13 @@ Weight scale by Konstantinos Anastasakis https://kostislab.blogspot.gr/
 
 Setup your scale and start WITHOUT a weight on the scale
 Once readings are displayed place a known weight on the scale
-Αdjust the calibration_factor with the potentiometer until the output readings match the known weight
+Αdjust the calibration_factor with the potentiometer until the
+output readings match the known weight
 
 
 ---CONNECTIONS---
 HX711 connection
-  *The HX711 board can be powered from 2.7V to 5V so the Arduino 5V power should be fine.
+  *The HX711 board can be powered from 2.7V to 5V.
   Arduino pin D6 -> HX711 CLK
   Arduino pin D5 -> HX711 DOUT
   Arduino pin 5V -> HX711 VCC
@@ -18,16 +19,15 @@ Sensor connection
   Excitation- (E-) or ground is black.
   Output+ (O+), Signal+ (S+)+ or Amplifier+ (A+) is white
   O-, S-, or A- is green or blue
-  more info hire: https://learn.sparkfun.com/tutorials/load-cell-amplifier-hx711-breakout-hookup-guide
+  more info hire:
+  https://learn.sparkfun.com/tutorials/load-cell-amplifier-hx711-breakout-hookup-guide
 
 LCD display connection
-  I2C Address
-  -----( Declare Constants )-----
-  -----( Declare objects )-----
-  https://arduino-info.wikispaces.com/LCD-Blue-I2C
-  set the LCD address to 0x27 for a 16 chars 2 line display. A FEW use address 0x3F.
+  With I2C adapter
+  more info hire: https://arduino-info.wikispaces.com/LCD-Blue-I2C
+  Set the LCD address to 0x27 for a 16 chars 2 line display. A FEW use address 0x3F.
   ​Some of I2C LCD interfaces have pins (or solder pads) that can be changed to change the address.
-  They are usually labelled as A0-A1-A2 . Here's how the address change from a default 0x27 or 0x3F,
+  They are usually labelled as A0-A1-A2. Here's how the address change from a default 0x27 or 0x3F,
   if you connect the address pads together. (1 = Not Connected. 0 = Connected):
   A0	A1	A2	HEX Address
   1	1	1	0x27
