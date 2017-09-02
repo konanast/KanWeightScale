@@ -72,7 +72,7 @@ read power state pin D?
 #include <Wire.h>
 #include <LiquidCrystal_I2C.h>  //https://bitbucket.org/fmalpartida/new-liquidcrystal/src
 #include "HX711.h"  //https://github.com/bogde/HX711
-#include "LowPower.h"
+#include "LowPower.h" //http://www.rocketscream.com/blog/2011/07/04/lightweight-low-power-arduino-library/
 // #include <Sodaq_DS3231.h>  //RTC Library https://github.com/SodaqMoja/Sodaq_DS3231
 
 // Set the pins on the I2C chip used for LCD connections:
@@ -98,11 +98,35 @@ int count = 0;       //
 
 const int calibButton = 10;
 const int zeroButton = 11;
+int zeroState = 0;
 const int memoryButton = 12;
 
 unsigned long time; // For the millis
 
 // Functions
+
+void sleep_code() {
+  // Allow wake up pin to trigger interrupt on low.
+  // attachInterrupt(0, sleep, LOW); //https://www.allaboutcircuits.com/technical-articles/using-interrupts-on-arduino/
+  scale.power_down(); // put the ADC in sleep mode
+  lcd.noDisplay();
+  lcd.noBacklight(); // turn off backlight
+
+    // for(int i=0;i<2;i++)
+  LowPower.powerDown(SLEEP_250MS, ADC_OFF, BOD_OFF);  // put the board to sleep
+
+  if (digitalRead(calibButton) == HIGH && digitalRead(zeroButton) == HIGH &&
+   digitalRead(memoryButton) == HIGH) {
+     sleep_code();
+   }
+   else {
+    setup();
+   }
+
+// Disable external pin interrupt on wake up pin.
+  detachInterrupt(0);
+}
+
 void calibration_code() {
   lcd.setCursor(0, 0);
   lcd.print("Turn the potenti");
@@ -181,9 +205,8 @@ void zero_code() {
 }
 
 void memory_code() {
-  delay(100);
   int memoryvalue = scale.read_average();
-  delay(100);
+  delay(10);
   lcd.setCursor(0, 1);
   lcd.print("A=");
   lcd.print(memoryvalue);
@@ -194,6 +217,7 @@ void memory_code() {
   lcd.print(" ");
 }
 // End function
+
 
 void setup() {
   // Serial.begin(9600);
@@ -229,12 +253,17 @@ void setup() {
 
   // set up the LCD's number of columns and rows:
   lcd.begin(16, 2);
+  lcd.display();
+  lcd.backlight();
+  // lcd.clear();  //Clear the lcd
 
-  delay(100);
+  count = 0;
+
+  scale.power_up();
+  delay(10);
   scale.set_scale();
-  delay(100);
+  delay(10);
   scale.tare();  //Reset the scale to 0
-  lcd.clear();  //Clear the lcd
 
 // // Serial print for debaging
 //   Serial.println("HX711 calibration sketch");
@@ -246,7 +275,6 @@ void setup() {
 void loop() {
   new_weight = scale.read_average();
   delta = new_weight - old_weight;
-
   time = millis(); //Returns the number of milliseconds since the Arduino board began running the current program.
     // This number will overflow (go back to zero), after approximately 50 days.
   calibration_factor = analogRead(potPin); // read the value from the potentiometer
@@ -261,27 +289,13 @@ void loop() {
   lcd.print(" ");
   lcd.print(" ");
   lcd.setCursor(0, 1);
-  lcd.print(" ");
-  lcd.print(" ");
-  lcd.print(" ");
 
   if (digitalRead(calibButton) == LOW) {calibration_code();}
   if (digitalRead(zeroButton) == LOW) {zero_code();}
   if (digitalRead(memoryButton) == LOW) {memory_code();}
 
-  if (delta < 1000) {
-    count++;
-  } else {
-    count = 0;
-  }
-
-  if (count > maxnum) {
-    scale.power_down(); // put the ADC in sleep mode
-    lcd.noDisplay();
-    lcd.noBacklight(); // turn off backlight
-    LowPower.powerDown(SLEEP_1S, ADC_OFF, BOD_OFF); // put the board to sleep
-    // scale.power_up();
-  }
+  if (delta < 10000) {count++;} else {count = 0;}
+  if (count > maxnum) {sleep_code();}
 
 // // Serial print for debaging
 //   Serial.print("calibration_factor: ");
@@ -306,3 +320,4 @@ void loop() {
 
   old_weight = new_weight; // Update the old readings
 }
+//https://github.com/kon-anast/kan-weight_scale
