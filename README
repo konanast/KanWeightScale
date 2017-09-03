@@ -1,15 +1,16 @@
-Weight scale by Konstantinos Anastasakis https://kostislab.blogspot.gr/
+Weight scale by Konstantinos Anastasakis https://github.com/kon-anast/kan-weight_scale
+My blog https://kostislab.blogspot.gr/
 
 This is a weight scale program for Arduino with a HX711 module
 
-Components needed
-Arduino board (I use arduino pro mmini 3.3v)
-Scale sensor (I got it from a broken kitchen scale)
-HX711 module
-Potentiometer
-LCD 1602 module (in advance use  also an i2c module)
-Battery
-Switches
+Components needed:
+-Arduino board (I use arduino pro mmini 3.3v)
+-Scale sensor (I got it from a broken kitchen scale)
+-HX711 module
+-Potentiometer
+-LCD 1602 module (in advance use  also an i2c module)
+-Battery
+-Switches
 
 if there is noise from the sensor use two 0.1uf capacitors to
 filter the signal from the Scale sensor
@@ -72,6 +73,9 @@ Potentiometer connection
 
 Calibration, Zero and Memory Button connection
   D10,  D11,  D12 *All to GND, it will be LOW when pressed.
+
+Battery monitor
+  A?
 
 Timer DS3231 module
   Future plans is to put a timer with a beeper, so I don't burn the food...

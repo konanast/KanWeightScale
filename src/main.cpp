@@ -1,71 +1,8 @@
 /*
-Weight scale by Konstantinos Anastasakis https://kostislab.blogspot.gr/
+Weight scale by Konstantinos Anastasakis //https://github.com/kon-anast/kan-weight_scale
+My blog https://kostislab.blogspot.gr/
 
- Setup your scale and start WITHOUT a weight on the scale
- Once readings are displayed place a known weight on the scale
- Αdjust the calibration_factor with the potentiometer in inverse proportion of the measurements until the output readings match the known weight
-
-HX711 conection
- *The HX711 board can be powered from 2.7V to 5V so the Arduino 5V power should be fine.
- Arduino pin D6 -> HX711 CLK
- Arduino pin D5 -> HX711 DOUT
- Arduino pin 5V -> HX711 VCC
- Arduino pin GND -> HX711 GND
-
-Sensor conection
- Excitation+ (E+) or VCC is red
- Excitation- (E-) or ground is black.
- Output+ (O+), Signal+ (S+)+ or Amplifier+ (A+) is white
- O-, S-, or A- is green or blue
- more info hire: https://learn.sparkfun.com/tutorials/load-cell-amplifier-hx711-breakout-hookup-guide
-
- LCD display conection
-  I2C Address
-  -----( Declare Constants )-----
-  -----( Declare objects )-----
-  https://arduino-info.wikispaces.com/LCD-Blue-I2C
-  set the LCD address to 0x27 for a 16 chars 2 line display. A FEW use address 0x3F.
-  ​Some of I2C LCD interfaces have pins (or solder pads) that can be changed to change the address.
-  They are usually labelled as A0-A1-A2 . Here's how the address change from a default 0x27 or 0x3F,
-  if you connect the address pads together. (1 = Not Connected. 0 = Connected):
-  A0	A1	A2	HEX Address
-  1	1	1	0x27
-  0	1	1	0x26
-  1	0	1	0x25
-  0	0	1	0x24
-  1	1	0	0x23
-  0	1	0	0x22
-  1	0	0	0x21
-  0	0	0	0x20
-
- If no i2c adapter the connections will be:
-  * LCD RS pin to digital pin 12
-  * LCD Enable pin to digital pin 11
-  * LCD D4 pin to digital pin 5
-  * LCD D5 pin to digital pin 4
-  * LCD D6 pin to digital pin 3
-  * LCD D7 pin to digital pin 2
-  * LCD R/W pin to ground
-  * LCD VSS pin to ground
-  * LCD VCC pin to 5V
-  * 10K resistor:
-  * ends to +5V and ground
-  * wiper to LCD VO pin (pin 3)
-
-Timer with DS3231 module
- Future plans is to put a timer with a beeper, so I don't burn the food...
- maybe a bluetooth and esp also... :)
-
-Potentiometer conection
-GND, A2, VCC
-
-Calibration, Zero and Memory Button conection
-D10,  D11,  D12 *All to GND, it will be LOW when pressed.
-
-Soft power with ..
-Not completed yet needs more work...
-power output pin D? *keeps the board alive
-read power state pin D?
+Read the README file
 */
 
 #include <Arduino.h>
@@ -94,16 +31,19 @@ int new_weight = 0; //
 int old_weight = 0; //
 int delta;  //
 int maxnum = 10;     //
-int count = 0;       //
 
-const int calibButton = 10;
+const int calibButton = 10; // add const if this should never change
 const int zeroButton = 11;
 int zeroState = 0;
 const int memoryButton = 12;
 
-unsigned long time; // For the millis
+// Sleep
+  int count = 0;
+  // const int interval = 32000; // Interval is how long we wait until it goes to sleep
+  // unsigned long previousMillis=0; // Tracks the time since last event fired
+  // unsigned long currentMillis;
 
-// Functions
+//----Functions----//
 
 void sleep_code() {
   // Allow wake up pin to trigger interrupt on low.
@@ -122,9 +62,6 @@ void sleep_code() {
    else {
     setup();
    }
-
-// Disable external pin interrupt on wake up pin.
-  detachInterrupt(0);
 }
 
 void calibration_code() {
@@ -172,36 +109,36 @@ void calibration_code() {
 }
 
 void zero_code() {
-    lcd.setCursor(0, 1);
-    lcd.print("Zeroing");
-    lcd.print(" ");
-    lcd.print(" ");
-    lcd.print(" ");
-    lcd.print(" ");
-    lcd.print(" ");
-    lcd.print(" ");
-    lcd.print(" ");
-    lcd.print(" ");
-    lcd.print(" ");
-    scale.tare();
-    delay(500);
-    lcd.setCursor(0, 1);
-    lcd.print(" "); // just to clear the screen, any better ideas??
-    lcd.print(" ");
-    lcd.print(" ");
-    lcd.print(" ");
-    lcd.print(" ");
-    lcd.print(" ");
-    lcd.print(" ");
-    lcd.print(" ");
-    lcd.print(" ");
-    lcd.print(" ");
-    lcd.print(" ");
-    lcd.print(" ");
-    lcd.print(" ");
-    lcd.print(" ");
-    lcd.print(" ");
-    lcd.print(" ");
+  lcd.setCursor(0, 1);
+  lcd.print("Zeroing");
+  lcd.print(" ");
+  lcd.print(" ");
+  lcd.print(" ");
+  lcd.print(" ");
+  lcd.print(" ");
+  lcd.print(" ");
+  lcd.print(" ");
+  lcd.print(" ");
+  lcd.print(" ");
+  scale.tare();
+  delay(500);
+  lcd.setCursor(0, 1);
+  lcd.print(" "); // just to clear the screen, any better ideas??
+  lcd.print(" ");
+  lcd.print(" ");
+  lcd.print(" ");
+  lcd.print(" ");
+  lcd.print(" ");
+  lcd.print(" ");
+  lcd.print(" ");
+  lcd.print(" ");
+  lcd.print(" ");
+  lcd.print(" ");
+  lcd.print(" ");
+  lcd.print(" ");
+  lcd.print(" ");
+  lcd.print(" ");
+  lcd.print(" ");
 }
 
 void memory_code() {
@@ -218,6 +155,19 @@ void memory_code() {
 }
 // End function
 
+int getBattVolts() { // Returns actual value of Vcc (x 100)
+
+  const long InternalReferenceVoltage = 1080L;  // Adjust this value to your boards specific internal BG voltage x1000
+    // Start a conversion
+  ADCSRA |= _BV( ADSC );
+    // Wait for it to complete
+  while( ( (ADCSRA & (1<<ADSC)) != 0 ) );
+    // Scale the value
+    // 100L is my fudge factor to match my multimeter R2
+  int results = (((InternalReferenceVoltage * 1024L) / ADC) + 100L) / 10L;
+  return results;
+
+}
 
 void setup() {
   // Serial.begin(9600);
@@ -251,13 +201,19 @@ void setup() {
   // Keep in mind the pull-up means the pushbutton's logic is inverted. It goes
   // HIGH when it's open, and LOW when it's pressed.
 
+  // set up for batt voltage measurement
+  // REFS1 REFS0          --> 0 1, AVcc internal ref. -Selects AVcc external reference
+  // MUX3 MUX2 MUX1 MUX0  --> 1110 1.1V (VBG)         -Selects channel 14, bandgap voltage, to measure
+  ADMUX = (0<<REFS1) | (1<<REFS0) | (0<<ADLAR) | (1<<MUX3) | (1<<MUX2) | (1<<MUX1) | (0<<MUX0);
+  delay(50);  // Let mux settle a little to get a more stable A/D conversion
+
   // set up the LCD's number of columns and rows:
   lcd.begin(16, 2);
   lcd.display();
   lcd.backlight();
   // lcd.clear();  //Clear the lcd
 
-  count = 0;
+  count = 0;  //count the loops
 
   scale.power_up();
   delay(10);
@@ -265,7 +221,7 @@ void setup() {
   delay(10);
   scale.tare();  //Reset the scale to 0
 
-// // Serial print for debaging
+// Serial print for debaging
 //   Serial.println("HX711 calibration sketch");
 //   Serial.println("Remove all weight from scale");
 //   Serial.println("After readings begin, place known weight on scale");
@@ -275,7 +231,6 @@ void setup() {
 void loop() {
   new_weight = scale.read_average();
   delta = new_weight - old_weight;
-  time = millis(); //Returns the number of milliseconds since the Arduino board began running the current program.
     // This number will overflow (go back to zero), after approximately 50 days.
   calibration_factor = analogRead(potPin); // read the value from the potentiometer
   scale.set_scale(calibration_factor); //Adjust to this calibration factor
@@ -288,16 +243,33 @@ void loop() {
   lcd.print(" ");
   lcd.print(" ");
   lcd.print(" ");
+  // lcd.setCursor(0, 1);
+
+   float results;
+   results = getBattVolts();
+
   lcd.setCursor(0, 1);
+  lcd.print("V");
+  lcd.print(results);
+  lcd.print(" t");
 
   if (digitalRead(calibButton) == LOW) {calibration_code();}
   if (digitalRead(zeroButton) == LOW) {zero_code();}
   if (digitalRead(memoryButton) == LOW) {memory_code();}
 
-  if (delta < 10000) {count++;} else {count = 0;}
-  if (count > maxnum) {sleep_code();}
+// Send the scale to sleep based on how much time has passed
+  // Get snapshot of time
+  // unsigned long currentMillis = millis();
+  // if ((unsigned long)(currentMillis - previousMillis) >= interval) {
+  //    sleep_code(); // Go for sleep if it is more then interval, will be chaged if use Soft power system
+  //    // Use the snapshot to set track time until next event
+  //    previousMillis = currentMillis;
+  // }
+// Send the scale to sleep be counting the loops,
+  // if (delta < 10000) {count++;} else {count = 0;}
+  // if (count > maxnum) {sleep_code();}
 
-// // Serial print for debaging
+// Serial print for debaging
 //   Serial.print("calibration_factor: ");
 //   Serial.println(calibration_factor);
 //   Serial.print("Reading: ");
@@ -316,8 +288,6 @@ void loop() {
 //   Serial.println(old_weight);
 //   Serial.print("count");
 //   Serial.println(count);
-// //
 
   old_weight = new_weight; // Update the old readings
 }
-//https://github.com/kon-anast/kan-weight_scale
