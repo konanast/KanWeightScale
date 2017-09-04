@@ -75,7 +75,11 @@ Calibration, Zero and Memory Button connection
   D10,  D11,  D12 *All to GND, it will be LOW when pressed.
 
 Battery monitor
-  A?
+  To create voltage divider connect two resistors to A0 pin
+  R1 10k to GND and A0
+  R2 25k - 75k to battery + and A0
+  more info hire: https://playground.arduino.cc/Main/DirectMathVoltmeter
+  and 
 
 Timer DS3231 module
   Future plans is to put a timer with a beeper, so I don't burn the food...
@@ -83,5 +87,3 @@ Timer DS3231 module
 
 Soft power on
   Not completed yet needs more work...
-  power output pin D? *keeps the board alive
-  read power state pin D?
