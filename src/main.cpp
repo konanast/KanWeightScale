@@ -3,6 +3,7 @@ Weight scale by Konstantinos Anastasakis //https://github.com/kon-anast/kan-weig
 My blog https://kostislab.blogspot.gr/
 
 Read the README file
+
 */
 
 #include <Arduino.h>
@@ -36,6 +37,13 @@ const int calibButton = 10; // add const if this should never change
 const int zeroButton = 11;
 int zeroState = 0;
 const int memoryButton = 12;
+
+// Voltage Reference pin
+const int voltRefPin = A0;
+float voltMult = 2.35; //multiplier
+// Voltage divider resistors
+int resistor1 = 10000; // R1 resistor connected to GND and AO
+int resistor2 = 7500; // R2 connected to Vcc and A0
 
 // Sleep
   int count = 0;
@@ -155,19 +163,34 @@ void memory_code() {
 }
 // End function
 
-int getBattVolts() { // Returns actual value of Vcc (x 100)
+void vref_code() {
 
-  const long InternalReferenceVoltage = 1080L;  // Adjust this value to your boards specific internal BG voltage x1000
-    // Start a conversion
-  ADCSRA |= _BV( ADSC );
-    // Wait for it to complete
-  while( ( (ADCSRA & (1<<ADSC)) != 0 ) );
-    // Scale the value
-    // 100L is my fudge factor to match my multimeter R2
-  int results = (((InternalReferenceVoltage * 1024L) / ADC) + 100L) / 10L;
-  return results;
+  //Variables for voltage divider
+  float denominator;
+	//Convert resistor values to division value
+  //  voltage divider equation: R2 / (R1 + R2)
+  denominator = (float)resistor2 / (resistor1 + resistor2);
 
-}
+  float voltage;
+  //Obtain RAW voltage data
+  voltage = analogRead(voltRefPin);
+  //Convert to actual voltage (..* 0 - 5 Vdc)
+  voltage = (voltage / 1024) * voltMult;
+  //Convert to voltage before divider
+  //  Divide by divider = multiply
+  //  Divide by 1/5 = multiply by 5
+  voltage = voltage / denominator;
+
+  //Output to serial & LCD
+  //  Serial.print("Volts: ");
+  //  Serial.println(voltage);
+  //  delay(500);  //Delay to make serial out readable
+
+	lcd.setCursor(0, 1);
+  lcd.print(voltage);
+	lcd.print("v ");
+
+} // void vref_code close
 
 void setup() {
   // Serial.begin(9600);
@@ -204,8 +227,10 @@ void setup() {
   // set up for batt voltage measurement
   // REFS1 REFS0          --> 0 1, AVcc internal ref. -Selects AVcc external reference
   // MUX3 MUX2 MUX1 MUX0  --> 1110 1.1V (VBG)         -Selects channel 14, bandgap voltage, to measure
-  ADMUX = (0<<REFS1) | (1<<REFS0) | (0<<ADLAR) | (1<<MUX3) | (1<<MUX2) | (1<<MUX1) | (0<<MUX0);
-  delay(50);  // Let mux settle a little to get a more stable A/D conversion
+  // ADMUX = (0<<REFS1) | (1<<REFS0) | (0<<ADLAR) | (1<<MUX3) | (1<<MUX2) | (1<<MUX1) | (0<<MUX0);
+  // delay(50);  // Let mux settle a little to get a more stable A/D conversion
+
+	// vRef.begin();	// Start Voltage Reference
 
   // set up the LCD's number of columns and rows:
   lcd.begin(16, 2);
@@ -245,13 +270,7 @@ void loop() {
   lcd.print(" ");
   // lcd.setCursor(0, 1);
 
-   float results;
-   results = getBattVolts();
-
-  lcd.setCursor(0, 1);
-  lcd.print("V");
-  lcd.print(results);
-  lcd.print(" t");
+	vref_code();
 
   if (digitalRead(calibButton) == LOW) {calibration_code();}
   if (digitalRead(zeroButton) == LOW) {zero_code();}
