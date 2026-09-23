@@ -2,7 +2,7 @@
 Weight scale by Konstantinos Anastasakis //https://github.com/kon-anast/kan-weight_scale
 My blog https://kostislab.blogspot.gr/
 
-Read the README file
+See README.md for wiring, building, and calibration instructions.
 
 */
 
@@ -18,58 +18,55 @@ Read the README file
 LiquidCrystal_I2C lcd(0x27, 2, 1, 0, 4, 5, 6, 7, 3, POSITIVE);  // For i2c adapter v1
 // LiquidCrystal_I2C lcd(0x20, 4, 5, 6, 0, 1, 2, 3, 7, NEGATIVE);  // For i2c adapter v2
 
-#define DOUT 7
-#define CLK  6
-HX711 scale(DOUT, CLK);
+const uint8_t dataPin = 7;
+const uint8_t clockPin = 6;
+HX711 scale(dataPin, clockPin);
 
-int potPin = 2;    // select the input pin for the potentiometer
+const uint8_t potPin = A2;
 
 float calibration_factor = 0;
-float units;
-float ounces;
 
-int new_weight = 0; //
-int old_weight = 0; //
-int delta;  //
-int maxnum = 10;     //
+// HX711 readings are 24-bit values, so they do not fit in an AVR int.
+long new_weight = 0;
+long old_weight = 0;
+long delta = 0;
 
-const int calibButton = 10; // add const if this should never change
-const int zeroButton = 11;
-int zeroState = 0;
-const int memoryButton = 12;
+const uint8_t calibButton = 10;
+const uint8_t zeroButton = 11;
+const uint8_t memoryButton = 12;
 
 // Voltage Reference pin
-const int voltRefPin = A0;
-float voltMult = 2.35; //multiplier
+const uint8_t voltRefPin = A0;
+const float voltMult = 2.35; // Measured ADC reference voltage.
 // Voltage divider resistors
-int resistor1 = 10000; // R1 resistor connected to GND and AO
-int resistor2 = 7500; // R2 connected to Vcc and A0
+const float resistor1 = 10000.0; // R1 resistor connected to GND and A0.
+const float resistor2 = 7500.0; // R2 connected to Vcc and A0.
 
 // Sleep
-  int count = 0;
   // const int interval = 32000; // Interval is how long we wait until it goes to sleep
   // unsigned long previousMillis=0; // Tracks the time since last event fired
   // unsigned long currentMillis;
 
 //----Functions----//
 
+void clearLine(uint8_t row) {
+  lcd.setCursor(0, row);
+  lcd.print("                ");
+}
+
 void sleep_code() {
-  // Allow wake up pin to trigger interrupt on low.
-  // attachInterrupt(0, sleep, LOW); //https://www.allaboutcircuits.com/technical-articles/using-interrupts-on-arduino/
   scale.power_down(); // put the ADC in sleep mode
   lcd.noDisplay();
   lcd.noBacklight(); // turn off backlight
 
-    // for(int i=0;i<2;i++)
-  LowPower.powerDown(SLEEP_250MS, ADC_OFF, BOD_OFF);  // put the board to sleep
+  while (digitalRead(calibButton) == HIGH && digitalRead(zeroButton) == HIGH &&
+         digitalRead(memoryButton) == HIGH) {
+    LowPower.powerDown(SLEEP_250MS, ADC_OFF, BOD_OFF);
+  }
 
-  if (digitalRead(calibButton) == HIGH && digitalRead(zeroButton) == HIGH &&
-   digitalRead(memoryButton) == HIGH) {
-     sleep_code();
-   }
-   else {
-    setup();
-   }
+  scale.power_up();
+  lcd.display();
+  lcd.backlight();
 }
 
 void calibration_code() {
@@ -79,7 +76,9 @@ void calibration_code() {
   lcd.print(" ");
   delay(1000);
 
-  while(digitalRead(calibButton) == LOW) { //while loop "do something" if the button is presed and stop if the button is realeased
+  while (digitalRead(calibButton) == LOW) {
+    calibration_factor = max(1, analogRead(potPin));
+    scale.set_scale(calibration_factor);
     lcd.setCursor(0, 0);
     lcd.print("Grams: ");
     lcd.print(scale.get_units(5), 1);
@@ -97,23 +96,7 @@ void calibration_code() {
     lcd.print(" ");
   }
 
-  lcd.setCursor(0, 1);
-  lcd.print(" "); // just to clear the screen, any better ideas??
-  lcd.print(" ");
-  lcd.print(" ");
-  lcd.print(" ");
-  lcd.print(" ");
-  lcd.print(" ");
-  lcd.print(" ");
-  lcd.print(" ");
-  lcd.print(" ");
-  lcd.print(" ");
-  lcd.print(" ");
-  lcd.print(" ");
-  lcd.print(" ");
-  lcd.print(" ");
-  lcd.print(" ");
-  lcd.print(" ");
+  clearLine(1);
 }
 
 void zero_code() {
@@ -130,27 +113,11 @@ void zero_code() {
   lcd.print(" ");
   scale.tare();
   delay(500);
-  lcd.setCursor(0, 1);
-  lcd.print(" "); // just to clear the screen, any better ideas??
-  lcd.print(" ");
-  lcd.print(" ");
-  lcd.print(" ");
-  lcd.print(" ");
-  lcd.print(" ");
-  lcd.print(" ");
-  lcd.print(" ");
-  lcd.print(" ");
-  lcd.print(" ");
-  lcd.print(" ");
-  lcd.print(" ");
-  lcd.print(" ");
-  lcd.print(" ");
-  lcd.print(" ");
-  lcd.print(" ");
+  clearLine(1);
 }
 
 void memory_code() {
-  int memoryvalue = scale.read_average();
+  long memoryvalue = scale.read_average();
   delay(10);
   lcd.setCursor(0, 1);
   lcd.print("A=");
@@ -165,16 +132,13 @@ void memory_code() {
 
 void vref_code() {
 
-  //Variables for voltage divider
-  float denominator;
-	//Convert resistor values to division value
+  // Convert resistor values to division value.
   //  voltage divider equation: R2 / (R1 + R2)
-  denominator = (float)resistor2 / (resistor1 + resistor2);
+  const float denominator = resistor2 / (resistor1 + resistor2);
 
-  float voltage;
-  //Obtain RAW voltage data
-  voltage = analogRead(voltRefPin);
-  //Convert to actual voltage (..* 0 - 5 Vdc)
+  // Obtain RAW voltage data.
+  float voltage = analogRead(voltRefPin);
+  // Convert to actual voltage using the measured ADC reference.
   voltage = (voltage / 1024) * voltMult;
   //Convert to voltage before divider
   //  Divide by divider = multiply
@@ -238,8 +202,6 @@ void setup() {
   lcd.backlight();
   // lcd.clear();  //Clear the lcd
 
-  count = 0;  //count the loops
-
   scale.power_up();
   delay(10);
   scale.set_scale();
@@ -256,8 +218,7 @@ void setup() {
 void loop() {
   new_weight = scale.read_average();
   delta = new_weight - old_weight;
-    // This number will overflow (go back to zero), after approximately 50 days.
-  calibration_factor = analogRead(potPin); // read the value from the potentiometer
+  calibration_factor = max(1, analogRead(potPin)); // Avoid division by zero.
   scale.set_scale(calibration_factor); //Adjust to this calibration factor
   lcd.setCursor(0, 0);
   lcd.print("Grams: ");
